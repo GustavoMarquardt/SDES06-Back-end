@@ -1,72 +1,71 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { Sequelize } = require('sequelize');
-const FestaModel = require('./src/models/FestaModel'); // Importando o modelo corretamente
-const UsuarioModel = require('./src/models/UsuarioModel'); // Importando o modelo corretamente
+const mysql = require('mysql2/promise');
+const FestaModel = require('./src/models/FestaModel');
+const UsuarioModel = require('./src/models/UsuarioModel');
 const app = express();
-const router = express.Router();  // Definindo o router
+const router = express.Router();
 
 app.use(bodyParser.json());
 app.use(express.json());
 
-// Inicializando o Sequelize
-const sequelize = new Sequelize('SDES06', 'root', '', {
-    host: 'localhost',
-    dialect: 'mysql',
-});
+// Configuração do banco de dados
+const DB_NAME = 'sdes06';
+const DB_USER = 'root';
+const DB_PASSWORD = '';
+const DB_HOST = 'localhost';
 
-// Usando as rotas definidas
-app.use('/api/festas', router);
+// Função para criar o banco de dados, se necessário
+async function createDatabaseIfNotExists() {
+    const connection = await mysql.createConnection({
+        host: DB_HOST,
+        user: DB_USER,
+        password: DB_PASSWORD,
+    });
+    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`;`);
+    await connection.end();
+}
 
-sequelize.authenticate()
-    .then(() => {
+// Função de inicialização do banco de dados e sincronização
+async function initializeDatabase() {
+    try {
+        await createDatabaseIfNotExists();
+        const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
+            host: DB_HOST,
+            dialect: 'mysql',
+        });
+
+        // Tenta autenticar a conexão
+        await sequelize.authenticate();
         console.log('Conexão com o banco de dados bem-sucedida!');
-    })
-    .catch((error) => {
-        console.error('Erro ao conectar ao banco de dados:', error);
-    });
 
-// Definindo o modelo
-const Festa = FestaModel(sequelize, Sequelize.DataTypes);  // Inicializando o modelo com Sequelize
-const Usuario = UsuarioModel(sequelize, Sequelize.DataTypes);
-sequelize.sync({ force: false })
-    .then(() => {
+        const Festa = FestaModel(sequelize, Sequelize.DataTypes);
+        const Usuario = UsuarioModel(sequelize, Sequelize.DataTypes);
+
+        // Sincroniza as tabelas de acordo com os modelos, criando-as se não existirem
+        await sequelize.sync({ alter: true });
         console.log('Banco de dados sincronizado!');
-    })
-    .catch((error) => {
-        console.error('Erro ao sincronizar o banco de dados:', error);
-    });
 
-// Função para cadastrar a festa
-// async function cadastrarFesta(festa) {
-//     try {
-//         const novaFesta = await Festa.create({
-//             nome_da_festa: festa.nome_da_festa,
-//             data_e_hora: festa.data_e_hora,
-//             localizacao: festa.localizacao,
-//             descricao: festa.descricao,
-//             capacidade: festa.capacidade,
-//             categoria: festa.categoria,
-//         });
-//         return novaFesta;
-//     } catch (err) {
-//         console.log('Erro ao cadastrar a festa:', err);
-//         return err;
-//     }
-// }
+        return { Festa, Usuario, sequelize };
+    } catch (error) {
+        console.error('Erro ao conectar ou sincronizar o banco de dados:', error);
+        process.exit(1); // Encerra o processo se houver erro de conexão
+    }
+}
 
-// Rota para cadastrar a festa
+// Rotas de Festa
 router.post('/cadastrarFesta', async (req, res) => {
     try {
         const festa = req.body;
-        const resultado = await Festa.cadastrar_festa(festa); // Chamando o método do modelo
-        res.status(200).json(resultado);  // Retorna a festa criada
+        const resultado = await Festa.cadastrar_festa(festa);
+        res.status(200).json(resultado);
     } catch (err) {
         console.log('Erro ao cadastrar a festa:', err);
         res.status(500).json({ mensagem: 'Erro ao cadastrar a festa' });
     }
 });
-// Rota para listar todas as festas futuras
+
 router.get('/listarFestas', async (req, res) => {
     try {
         const resultado = await Festa.listar_festas();
@@ -77,7 +76,6 @@ router.get('/listarFestas', async (req, res) => {
     }
 });
 
-// Rota para listar uma festa específica por ID
 router.get('/listarFesta/:id', async (req, res) => {
     const { id } = req.params;
 
@@ -93,23 +91,12 @@ router.get('/listarFesta/:id', async (req, res) => {
     }
 });
 
-// Rota para atualizar os dados de uma festa
 router.put('/atualizarFesta/:id', async (req, res) => {
-    const { nome_da_festa, data_e_hora, localizacao, descricao, capacidade, categoria } = req.body;
     const { id } = req.params;
+    const festaAtualizada = { id, ...req.body };
 
-    const festa = {
-        id,
-        nome_da_festa,
-        data_e_hora,
-        localizacao,
-        descricao,
-        capacidade,
-        categoria
-    };
-    
     try {
-        const resultado = await Festa.atualizar_festa(festa);
+        const resultado = await Festa.atualizar_festa(festaAtualizada);
         return res.status(resultado.status).json(resultado);
     } catch (err) {
         console.error(err);
@@ -117,7 +104,6 @@ router.put('/atualizarFesta/:id', async (req, res) => {
     }
 });
 
-// Rota para excluir uma festa
 router.delete('/excluirFesta/:id', async (req, res) => {
     const { id } = req.params;
 
@@ -130,6 +116,7 @@ router.delete('/excluirFesta/:id', async (req, res) => {
     }
 });
 
+// Rotas de Usuario
 router.post('/cadastrarUsuario', async (req, res) => {
     try {
         const usuario = req.body;
@@ -144,7 +131,6 @@ router.post('/cadastrarUsuario', async (req, res) => {
     }
 });
 
-// Rota para alterar o perfil de um usuário
 router.put('/alterarUsuario/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -160,7 +146,6 @@ router.put('/alterarUsuario/:id', async (req, res) => {
     }
 });
 
-// Rota para excluir um usuário
 router.delete('/excluirUsuario/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -172,7 +157,6 @@ router.delete('/excluirUsuario/:id', async (req, res) => {
     }
 });
 
-// Rota para buscar um usuário pelo ID
 router.get('/buscarUsuario/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -187,9 +171,11 @@ router.get('/buscarUsuario/:id', async (req, res) => {
     }
 });
 
-// Iniciar o servidor
-app.listen(3000, () => {
-    console.log('Servidor rodando na porta 3000');
-});
+// Inicializando o banco e iniciando o servidor
+initializeDatabase().then(({ Festa, Usuario }) => {
+    app.use('/api/festas', router);
 
-module.exports = router ;
+    app.listen(3000, () => {
+        console.log('Servidor rodando na porta 3000');
+    });
+});

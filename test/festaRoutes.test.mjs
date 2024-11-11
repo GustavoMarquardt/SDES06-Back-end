@@ -1,5 +1,5 @@
 import request from 'supertest';  // Também usando importação dinâmica
-import app from '../src/app';  // Certifique-se de que o caminho está correto para o seu arquivo app.js
+import app from '../src/app.js';  // Certifique-se de que o caminho está correto para o seu arquivo app.js
 
 describe('Festa API', function() {
     it('deve cadastrar uma festa via API', async function() {

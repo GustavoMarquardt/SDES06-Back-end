@@ -1,38 +1,60 @@
 const Sequelize = require('sequelize');
 
-// Configuração da conexão com o banco de dados MySQL
-const sequelize = new Sequelize(
-    'SDES06',        // Nome do banco de dados
-    'root',          // Nome de usuário
-    '',              // Senha (vazia neste caso)
+// Configuração inicial para conectar sem um banco de dados específico
+const sequelizeInicial = new Sequelize(
+    '',            // Nome do banco de dados vazio, para permitir a conexão
+    'root',        // Nome de usuário
+    '',            // Senha (vazia neste caso)
     {
-        host: 'localhost',  // Altere para 'mysqldb' ou o nome do seu serviço Docker se estiver usando o Docker
-        port: 3306,         // A porta padrão para MySQL é 3306
+        host: 'localhost', // Altere para 'mysqldb' se estiver usando Docker
+        port: 3306,
         dialect: 'mysql',
-        logging: true,      // Ativar logs do Sequelize
-        define: {
-            timestamps: false,  // Desativa a criação de timestamps automáticos
-            freezeTableName: true, // Impede que o Sequelize altere o nome das tabelas
-        },
+        logging: true
     }
 );
 
 const conectar = async function () {
     try {
-        // Tenta autenticar a conexão
-        await sequelize.authenticate();
+        // Conexão inicial para criar o banco de dados, se necessário
+        await sequelizeInicial.authenticate();
+        console.log(`\n--> Conexão inicial estabelecida para verificar/criar o banco de dados.`);
 
-        console.log(`\n--> Connection with 'mysqldb:3306/SDES06' established`);
+        // Cria o banco de dados, caso ele não exista
+        await sequelizeInicial.query('CREATE DATABASE IF NOT EXISTS SDES06;');
+
+        // Configuração com o banco de dados especificado
+        const sequelize = new Sequelize(
+            'SDES06',        // Nome do banco de dados
+            'root',          // Nome de usuário
+            '',              // Senha (vazia neste caso)
+            {
+                host: 'localhost',
+                port: 3306,
+                dialect: 'mysql',
+                logging: true,
+                define: {
+                    timestamps: false,
+                    freezeTableName: true,
+                },
+            }
+        );
+
+        // Conecta ao banco de dados criado
+        await sequelize.authenticate();
+        console.log(`\n--> Conexão estabelecida com o banco de dados 'SDES06'.`);
+
+        // Sincroniza as tabelas de acordo com os modelos definidos
+        await sequelize.sync({ alter: true });
+        console.log('Tabelas criadas e sincronizadas com sucesso.');
 
         return sequelize;  // Retorna a instância do Sequelize
     } catch (error) {
-        console.error(`\nUnable to establish connection with 'mysqldb:3306/SDES06' using user 'root' and empty password!`);
+        console.error(`\nErro ao conectar ao banco de dados ou criar as tabelas!`);
         console.error(error);
-
-        throw error;  // Lança o erro novamente para que possa ser tratado externamente
+        throw error;
     }
 };
 
 module.exports = {
-  conectar: conectar,
+    conectar: conectar,
 };
