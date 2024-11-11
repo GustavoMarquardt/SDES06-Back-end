@@ -9,7 +9,8 @@ const sequelizeInicial = new Sequelize(
         host: 'localhost', // Altere para 'mysqldb' se estiver usando Docker
         port: 3306,
         dialect: 'mysql',
-        logging: true
+        logging: true,
+        charset: 'utf8mb4',
     }
 );
 
