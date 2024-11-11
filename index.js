@@ -4,16 +4,12 @@ const { Sequelize } = require('sequelize');
 const mysql = require('mysql2/promise');
 const FestaModel = require('./src/models/FestaModel');
 const UsuarioModel = require('./src/models/UsuarioModel');
-const app = express();
 const router = express.Router();
-
-app.use(bodyParser.json());
-app.use(express.json());
 
 // Configuração do banco de dados
 const DB_NAME = 'sdes06';
 const DB_USER = 'root';
-const DB_PASSWORD = '';
+const DB_PASSWORD = 'admin';
 const DB_HOST = 'localhost';
 
 // Função para criar o banco de dados, se necessário
@@ -53,6 +49,10 @@ async function initializeDatabase() {
         process.exit(1); // Encerra o processo se houver erro de conexão
     }
 }
+
+// Configurações de middlewares
+router.use(bodyParser.json());
+router.use(express.json());
 
 // Rotas de Festa
 router.post('/cadastrarFesta', async (req, res) => {
@@ -171,11 +171,5 @@ router.get('/buscarUsuario/:id', async (req, res) => {
     }
 });
 
-// Inicializando o banco e iniciando o servidor
-initializeDatabase().then(({ Festa, Usuario }) => {
-    app.use('/api/festas', router);
+module.exports = { router, initializeDatabase };
 
-    app.listen(3000, () => {
-        console.log('Servidor rodando na porta 3000');
-    });
-});
