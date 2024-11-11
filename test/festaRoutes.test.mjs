@@ -1,12 +1,21 @@
-import request from 'supertest';  // Também usando importação dinâmica
-import app from '../src/app.js';  // Certifique-se de que o caminho está correto para o seu arquivo app.js
+import request from 'supertest';
+import app from '../src/app.js';
+import { expect } from 'chai';
 
-describe('Festa API', function() {
-    it('deve cadastrar uma festa via API', async function() {
-        const { expect } = await import('chai');  // Importação dinâmica do Chai
+describe('Festa API', function () {
+    let server;
 
-        const response = await request(app)
-            .post('/festa')
+    before((done) => {
+        server = app.listen(3000, done);  // Inicia o servidor antes dos testes
+    });
+
+    after((done) => {
+        server.close(done);  // Fecha o servidor após os testes
+    });
+
+    it('deve cadastrar uma festa via API', async function () {
+        const response = await request(server)
+            .post('/api/festas/cadastrarFesta')
             .send({
                 nome_da_festa: 'Festa Teste',
                 data_e_hora: '2024-12-01T20:00:00',
@@ -16,7 +25,7 @@ describe('Festa API', function() {
                 categoria: 'Teste'
             });
 
-        expect(response.status).to.equal(200);  // Verifica se o status é 200
-        expect(response.body.message).to.equal('Festa cadastrada com sucesso');  // Verifica a mensagem de sucesso
+        expect(response.status).to.equal(200);
+        expect(response.body.message).to.equal('Festa cadastrada com sucesso');
     });
 });

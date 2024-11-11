@@ -16,7 +16,7 @@ const DB_USER = 'root';
 const DB_PASSWORD = '';
 const DB_HOST = 'localhost';
 
-// Função para criar o banco de dados, se necessário
+// Função para criar o banco de dados, se necessário 
 async function createDatabaseIfNotExists() {
     const connection = await mysql.createConnection({
         host: DB_HOST,
@@ -29,9 +29,10 @@ async function createDatabaseIfNotExists() {
 
 // Função de inicialização do banco de dados e sincronização
 async function initializeDatabase() {
+    let sequelize;
     try {
         await createDatabaseIfNotExists();
-        const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
+        sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
             host: DB_HOST,
             dialect: 'mysql',
         });
@@ -40,8 +41,9 @@ async function initializeDatabase() {
         await sequelize.authenticate();
         console.log('Conexão com o banco de dados bem-sucedida!');
 
-        const Festa = FestaModel(sequelize, Sequelize.DataTypes);
-        const Usuario = UsuarioModel(sequelize, Sequelize.DataTypes);
+        // Aqui instanciamos o modelo Festa e Usuario com a conexão
+        const Festa = FestaModel(sequelize);
+        const Usuario = UsuarioModel(sequelize);
 
         // Sincroniza as tabelas de acordo com os modelos, criando-as se não existirem
         await sequelize.sync({ alter: true });
@@ -54,125 +56,128 @@ async function initializeDatabase() {
     }
 }
 
-// Rotas de Festa
-router.post('/cadastrarFesta', async (req, res) => {
-    try {
-        const festa = req.body;
-        const resultado = await Festa.cadastrar_festa(festa);
-        res.status(200).json(resultado);
-    } catch (err) {
-        console.log('Erro ao cadastrar a festa:', err);
-        res.status(500).json({ mensagem: 'Erro ao cadastrar a festa' });
-    }
-});
-
-router.get('/listarFestas', async (req, res) => {
-    try {
-        const resultado = await Festa.listar_festas();
-        return res.status(resultado.status).json(resultado);
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ mensagem: 'Erro ao listar festas.' });
-    }
-});
-
-router.get('/listarFesta/:id', async (req, res) => {
-    const { id } = req.params;
-
-    try {
-        const festa = await Festa.findByPk(id);
-        if (!festa) {
-            return res.status(404).json({ mensagem: 'Festa não encontrada.' });
-        }
-        return res.status(200).json(festa);
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ mensagem: 'Erro ao buscar a festa.' });
-    }
-});
-
-router.put('/atualizarFesta/:id', async (req, res) => {
-    const { id } = req.params;
-    const festaAtualizada = { id, ...req.body };
-
-    try {
-        const resultado = await Festa.atualizar_festa(festaAtualizada);
-        return res.status(resultado.status).json(resultado);
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ mensagem: 'Erro ao atualizar a festa.' });
-    }
-});
-
-router.delete('/excluirFesta/:id', async (req, res) => {
-    const { id } = req.params;
-
-    try {
-        const resultado = await Festa.excluir_festa(id);
-        return res.status(resultado.status).json(resultado);
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ mensagem: 'Erro ao excluir a festa.' });
-    }
-});
-
-// Rotas de Usuario
-router.post('/cadastrarUsuario', async (req, res) => {
-    try {
-        const usuario = req.body;
-        const resultadoCadastro = await Usuario.cadastrar_usuario(usuario);
-        res.status(resultadoCadastro.status).json({
-            mensagem: resultadoCadastro.mensagem,
-            usuario: resultadoCadastro.usuario || null
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ mensagem: 'Erro ao tentar cadastrar o usuário.' });
-    }
-});
-
-router.put('/alterarUsuario/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const usuarioAtualizado = { id, ...req.body };
-        const resultadoAlteracao = await Usuario.alterar_perfil(usuarioAtualizado);
-        res.status(resultadoAlteracao.status).json({
-            mensagem: resultadoAlteracao.mensagem,
-            usuario: resultadoAlteracao.usuario || null
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ mensagem: 'Erro ao tentar alterar os dados do usuário.' });
-    }
-});
-
-router.delete('/excluirUsuario/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const resultadoExclusao = await Usuario.excluir_usuario(id);
-        res.status(resultadoExclusao.status).json({ mensagem: resultadoExclusao.mensagem });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ mensagem: 'Erro ao tentar excluir o usuário.' });
-    }
-});
-
-router.get('/buscarUsuario/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const usuario = await Usuario.buscar_por_id(id);
-        res.status(usuario.status).json({
-            mensagem: usuario.mensagem,
-            usuario: usuario.dados || null
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ mensagem: 'Erro ao tentar buscar os dados do usuário.' });
-    }
-});
-
 // Inicializando o banco e iniciando o servidor
-initializeDatabase().then(({ Festa, Usuario }) => {
+initializeDatabase().then(({ Festa, Usuario, sequelize }) => {
+    // Agora que a conexão está estabelecida e o modelo Festa está disponível, podemos definir as rotas
+
+    // Rotas de Festa
+    router.post('/cadastrarFesta', async (req, res) => {
+        try {
+            const festa = req.body;
+            // Chamando a função cadastrar_festa no modelo Festa
+            const resultado = await Festa.cadastrar_festa(festa);
+            res.status(200).json(resultado);
+        } catch (err) {
+            console.log('Erro ao cadastrar a festa:', err);
+            res.status(500).json({ mensagem: 'Erro ao cadastrar a festa' });
+        }
+    });
+
+    router.get('/listarFestas', async (req, res) => {
+        try {
+            const resultado = await Festa.listar_festas();
+            return res.status(resultado.status).json(resultado);
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ mensagem: 'Erro ao listar festas.' });
+        }
+    });
+
+    router.get('/listarFesta/:id', async (req, res) => {
+        const { id } = req.params;
+
+        try {
+            const festa = await Festa.findByPk(id);
+            if (!festa) {
+                return res.status(404).json({ mensagem: 'Festa não encontrada.' });
+            }
+            return res.status(200).json(festa);
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ mensagem: 'Erro ao buscar a festa.' });
+        }
+    });
+
+    router.put('/atualizarFesta/:id', async (req, res) => {
+        const { id } = req.params;
+        const festaAtualizada = { id, ...req.body };
+
+        try {
+            const resultado = await Festa.atualizar_festa(festaAtualizada);
+            return res.status(resultado.status).json(resultado);
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ mensagem: 'Erro ao atualizar a festa.' });
+        }
+    });
+
+    router.delete('/excluirFesta/:id', async (req, res) => {
+        const { id } = req.params;
+
+        try {
+            const resultado = await Festa.excluir_festa(id);
+            return res.status(resultado.status).json(resultado);
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ mensagem: 'Erro ao excluir a festa.' });
+        }
+    });
+
+
+// Rota para cadastrar um usuário
+router.post('/usuario/cadastrarUsuario', async (req, res) => {
+    try {
+        console.log('ODEIO ISSO');
+        const usuario = req.body;
+        const resultado = await Usuario.cadastrar_usuario(usuario);
+        return res.status(resultado.status).json(resultado);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ mensagem: 'Erro ao cadastrar usuário' });
+    }
+});
+
+// Rota para alterar o perfil de um usuário
+router.put('/usuario/alterarPerfil/:id', async (req, res) => {
+    const { id } = req.params;
+    const usuarioAtualizado = { id, ...req.body };
+
+    try {
+        const resultado = await Usuario.alterar_perfil(usuarioAtualizado);
+        return res.status(resultado.status).json(resultado);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ mensagem: 'Erro ao alterar perfil' });
+    }
+});
+
+// Rota para excluir um usuário
+router.delete('/usuario/excluirUsuario/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const resultado = await Usuario.excluir_usuario(id);
+        return res.status(resultado.status).json(resultado);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ mensagem: 'Erro ao excluir usuário' });
+    }
+});
+
+// Rota para buscar um usuário por ID
+router.get('/usuario/buscarUsuario/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const resultado = await Usuario.buscar_por_id(id);
+        return res.status(resultado.status).json(resultado);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ mensagem: 'Erro ao buscar usuário' });
+    }
+});
+
+    // Inicializando as rotas no servidor
     app.use('/api/festas', router);
 
     app.listen(3000, () => {

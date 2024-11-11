@@ -30,23 +30,14 @@ module.exports = (sequelize) => {
     }, {
         timestamps: false  // Desabilita os campos createdAt e updatedAt
     });
+    // Definindo a função cadastrar_festa diretamente no modelo
     Festa.cadastrar_festa = async (festa) => {
         try {
-            const novaFesta = await Festa.create({
-                nome_da_festa: festa.nome_da_festa,
-                data_e_hora: festa.data_e_hora,
-                localizacao: festa.localizacao,
-                descricao: festa.descricao,
-                capacidade: festa.capacidade,
-                categoria: festa.categoria,
-            });
-            return {
-                "status": 200,
-                "message": "Festa cadastrada com sucesso"
-            }
-        } catch (err) {
-            console.log('Erro ao cadastrar a festa:', err);
-            throw new Error(err);  // Lançando um erro para captura
+            const novaFesta = await Festa.create(festa);
+            return { status: 200, mensagem: 'Festa cadastrada com sucesso!', festa: novaFesta };
+        } catch (error) {
+            console.error('Erro ao cadastrar festa:', error);
+            return { status: 500, mensagem: 'Erro ao cadastrar festa' };
         }
     };
     Festa.listar_festas = async () => {

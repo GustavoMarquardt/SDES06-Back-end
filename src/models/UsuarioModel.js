@@ -35,6 +35,7 @@ module.exports = (sequelize) => {
     Usuario.cadastrar_usuario = async (usuario) => {
         try {
             // Verificação de e-mail já cadastrado
+            console.log('VSF');
             const usuarioExistente = await Usuario.findOne({ where: { email: usuario.email } });
             if (usuarioExistente) {
                 return { status: 409, mensagem: 'E-mail já cadastrado' };
@@ -52,8 +53,9 @@ module.exports = (sequelize) => {
 
             const regex = /\.edu/;
             const email = usuario.email;
-
-            if (regex.test(email)) {
+            teste = regex.test(email);
+            console.log(teste);
+            if (!teste) {
                 return { status: 400, mensagem: 'Nosso sistema atende somente e-mails institucionais.' };
             }
 
