@@ -226,3 +226,6 @@ router.post('/usuario/loginUsuario', async (req, res) => {
         console.log('Servidor rodando na porta 3000');
     });
 });
+
+
+module.exports = router;
