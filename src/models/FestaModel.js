@@ -26,11 +26,26 @@ module.exports = (sequelize) => {
         categoria: {
             type: DataTypes.STRING,
             allowNull: false
+        },
+        id_criador: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'usuarios',  // Nome da tabela com a qual está a relação
+                key: 'id'           // Campo que é referenciado em Usuarios
+            }
         }
     }, {
-        timestamps: false  // Desabilita os campos createdAt e updatedAt
+        timestamps: false,  // Desabilita os campos createdAt e updatedAt
     });
-    // Definindo a função cadastrar_festa diretamente no modelo
+
+    // Definir a associação (relacionamento) entre Festa e Usuario
+    Festa.associate = function(models) {
+        // Chave estrangeira: Festa pertence a um Usuario (um criador)
+        Festa.belongsTo(models.Usuarios, { foreignKey: 'id_criador' });
+    };
+
+    // Funções para manipulação de festas
     Festa.cadastrar_festa = async (festa) => {
         try {
             const novaFesta = await Festa.create(festa);
@@ -40,6 +55,7 @@ module.exports = (sequelize) => {
             return { status: 500, mensagem: 'Erro ao cadastrar festa' };
         }
     };
+
     Festa.listar_festas = async () => {
         try {
             const festas = await Festa.findAll({

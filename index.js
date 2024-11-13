@@ -6,6 +6,9 @@ const FestaModel = require('./src/models/FestaModel');
 const UsuarioModel = require('./src/models/UsuarioModel');
 const app = express();
 const router = express.Router();
+const cors = require('cors'); // Importe o pacote corsconst cors = require('cors'); // Importe o pacote cors
+
+app.use(cors());
 
 app.use(bodyParser.json());
 app.use(express.json());
@@ -42,9 +45,9 @@ async function initializeDatabase() {
         console.log('Conexão com o banco de dados bem-sucedida!');
 
         // Aqui instanciamos o modelo Festa e Usuario com a conexão
-        const Festa = FestaModel(sequelize);
+        
         const Usuario = UsuarioModel(sequelize);
-
+        const Festa = FestaModel(sequelize);
         // Sincroniza as tabelas de acordo com os modelos, criando-as se não existirem
         await sequelize.sync({ alter: true });
         console.log('Banco de dados sincronizado!');
@@ -95,6 +98,29 @@ initializeDatabase().then(({ Festa, Usuario, sequelize }) => {
         } catch (err) {
             console.error(err);
             return res.status(500).json({ mensagem: 'Erro ao buscar a festa.' });
+        }
+    });
+
+    router.get('/listarFestaCriador/:id', async (req, res) => {
+        const { id } = req.params;  // Pega o ID do criador
+    
+        try {
+            // Busca todas as festas associadas ao id_criador
+            const festas = await Festa.findAll({
+                where: {
+                    id_criador: id  // Filtra as festas pelo id_criador
+                }
+            });
+    
+            // Verifica se não encontrou festas para o criador
+            if (festas.length === 0) {
+                return res.status(404).json({ mensagem: 'Nenhuma festa encontrada para este criador.' });
+            }
+    
+            return res.status(200).json(festas);  // Retorna as festas encontradas
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ mensagem: 'Erro ao buscar as festas.' });
         }
     });
 
@@ -174,6 +200,22 @@ router.get('/usuario/buscarUsuario/:id', async (req, res) => {
     } catch (err) {
         console.error(err);
         return res.status(500).json({ mensagem: 'Erro ao buscar usuário' });
+    }
+});
+
+// Rota para fazer login
+router.post('/usuario/loginUsuario', async (req, res) => {
+    const { email, senha } = req.body; // Obtém o email e a senha do corpo da requisição
+
+    try {
+        // Chama a função de autenticação no modelo Usuario
+        const resultado = await Usuario.autenticar_usuario(email, senha);
+
+        // Retorna o resultado da autenticação com o status e a mensagem
+        return res.status(resultado.status).json(resultado);
+    } catch (err) {
+        console.error('Erro ao autenticar usuário:', err);
+        return res.status(500).json({ mensagem: 'Erro interno ao autenticar usuário.' });
     }
 });
 

@@ -112,9 +112,9 @@ module.exports = (sequelize) => {
     // Função para buscar um usuário por ID
     Usuario.buscar_por_id = async (id) => {
         try {
-            const usuario = await Usuario.findByPk(id, { attributes: ['nome_completo', 'email', 'rede_social'] });
+            const usuario = await Usuario.findByPk(id, { attributes: ['nome_completo', 'senha', 'rede_social'] });
             if (!usuario) {
-                return { status: 404, mensagem: 'Usuário não encontrado.' };
+                return { status: 404, mensagem: 'Senha ou login estão incorretos' };
             }
 
             return { status: 200, mensagem: 'Dados recebidos com sucesso.', dados: usuario };
@@ -124,5 +124,31 @@ module.exports = (sequelize) => {
         }
     };
 
+    // Função para autenticar um usuário por nome e senha
+Usuario.autenticar_usuario = async (email, senha) => {
+    try {
+        // Verifica se o usuário existe com o nome e senha fornecidos
+        const usuario = await Usuario.findOne({
+            where: {
+                email: email,
+                senha: senha
+            },
+            attributes: ['id', 'nome_completo', 'email', 'rede_social'] // Retorna apenas campos essenciais
+        });
+
+        // Se não encontrar o usuário, retorna um erro 404
+        if (!usuario) {
+            return { status: 404, mensagem: 'email ou senha incorretos.' };
+        }
+
+        // Se o usuário foi encontrado, retorna sucesso com os dados do usuário
+        return { status: 200, mensagem: 'Autenticação bem-sucedida.', usuario };
+    } catch (err) {
+        console.log('Erro ao autenticar usuário:', err);
+        return { status: 500, mensagem: 'Erro ao autenticar o usuário.' };
+    }
+};
+
+    
     return Usuario;
 };
