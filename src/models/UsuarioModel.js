@@ -35,33 +35,34 @@ module.exports = (sequelize) => {
     Usuario.cadastrar_usuario = async (usuario) => {
         try {
             // Verificação de e-mail já cadastrado
-            console.log('VSF');
-            const usuarioExistente = await Usuario.findOne({ where: { email: usuario.email } });
-            if (usuarioExistente) {
-                return { status: 409, mensagem: 'E-mail já cadastrado' };
-            }
-
-            // Verificação da senha
-            if (!usuario.senha || usuario.senha.length < 8) {
-                return { status: 400, mensagem: 'Senha deve ter no mínimo 8 caracteres.' };
-            }
-
-            // Verificação da idade
-            if (usuario.idade < 18) {
-                return { status: 400, mensagem: 'Deve ser maior de 18 anos.' };
-            }
-
-            const regex = /\.edu/;
+            
+            const regex = /.@.+\.edu./;
             const email = usuario.email;
             teste = regex.test(email);
             console.log(teste);
             if (!teste) {
                 return { status: 400, mensagem: 'Nosso sistema atende somente e-mails institucionais.' };
             }
+            
+            // Verificação da senha
+            if (!usuario.senha || usuario.senha.length < 8) {
+                return { status: 400, mensagem: 'Senha deve ter no mínimo 8 caracteres.' };
+            }
+            
+            // Verificação da idade
+            if (usuario.idade < 18) {
+                return { status: 400, mensagem: 'Deve ser maior de 18 anos.' };
+            }
+            
+            const usuarioExistente = await Usuario.findOne({ where: { email: usuario.email } });
+            if (usuarioExistente) {
+                return { status: 409, mensagem: 'E-mail já cadastrado' };
+            }
 
             // Criação do novo usuário no banco
             const novoUsuario = await Usuario.create(usuario);
 
+            
             return { status: 200, mensagem: 'E-mail cadastrado com sucesso', usuario: novoUsuario };
         } catch (err) {
             console.log('Erro ao cadastrar usuário:', err);
