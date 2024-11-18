@@ -34,6 +34,10 @@ module.exports = (sequelize) => {
                 model: 'usuarios',  // Nome da tabela com a qual está a relação
                 key: 'id'           // Campo que é referenciado em Usuarios
             }
+        },
+        imagem_festa: {
+            type: DataTypes.BLOB('long'), // Utiliza o tipo BLOB para armazenar a imagem
+            allowNull: true               // Imagem pode ser nula, caso não seja enviada
         }
     }, {
         timestamps: false,  // Desabilita os campos createdAt e updatedAt
@@ -48,6 +52,7 @@ module.exports = (sequelize) => {
     // Funções para manipulação de festas
     Festa.cadastrar_festa = async (festa) => {
         try {
+            console.log('Festa Model',festa)
             const novaFesta = await Festa.create(festa);
             return { status: 200, mensagem: 'Festa cadastrada com sucesso!', festa: novaFesta };
         } catch (error) {
@@ -86,6 +91,19 @@ module.exports = (sequelize) => {
             return { status: 200, message: 'Festa excluída com sucesso!' };
         } catch (error) {
             return { status: 500, message: error.message };
+        }
+    };
+
+    Festa.listar_festas_por_criador = async (id_criador) => {
+        try {
+            const festas = await Festa.findAll({
+                where: {
+                    id_criador: id_criador  // Filtro para o id_criador
+                }
+            });
+            return { status: 200, festas };  // Retorna as festas do criador
+        } catch (error) {
+            return { status: 500, message: error.message };  // Caso ocorra um erro
         }
     };
 
