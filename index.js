@@ -260,7 +260,7 @@ initializeDatabase().then(({ Festa, Usuario, Avaliacao, Comentario, sequelize })
     router.post('/avaliacoes', async (req, res) => {
         try {
             const avaliacao = req.body; // Dados da avaliação enviados pelo cliente
-            console.log(avaliacao);
+            console.log('avaliacao sendo feita',avaliacao);
             const resultado = await Avaliacao.cadastrar_avaliacao(avaliacao);
             res.status(resultado.status).json(resultado);
         } catch (error) {
