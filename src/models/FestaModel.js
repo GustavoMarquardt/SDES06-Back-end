@@ -64,11 +64,6 @@ module.exports = (sequelize) => {
     Festa.listar_festas = async () => {
         try {
             const festas = await Festa.findAll({
-                where: {
-                    data_e_hora: {
-                        [Sequelize.Op.gte]: new Date()  // Filtra as festas futuras
-                    }
-                }
             });
             return { status: 200, festas };  // Está retornando as festas corretamente.
         } catch (error) {
