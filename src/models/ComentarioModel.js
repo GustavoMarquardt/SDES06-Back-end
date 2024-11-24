@@ -11,34 +11,25 @@ module.exports = (sequelize) => {
                 key: 'id'           // Campo que é referenciado em Usuarios
             }
         },
-        id_festa: {
+        id_avaliacao: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
-                model: 'festa',  // Nome da tabela com a qual está a relação
-                key: 'id'        // Campo que é referenciado em Festa
+                model: 'avaliacaos',  // Nome da tabela com a qual está a relação
+                key: 'id'        // Campo que é referenciado em Avaliacao
             }
         },
         comentario: {
             type: DataTypes.STRING,
             allowNull: false
         },
-        like: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: false  // Definir valor padrão como false
-        },
-        dislike: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: false  // Definir valor padrão como false
-        },
-    });
+            //timestamps: false,  // Desabilita os campos createdAt e updatedAt
+        });
 
     // Definir a associação (relacionamento) entre Comentario e Festa e Usuario
     Comentario.associate = function (models) {
-        // Comentario pertence a uma Festa
-        Comentario.belongsTo(models.Festa, { foreignKey: 'id_festa' });
+        // Comentario pertence a uma Avaliacao
+        Comentario.belongsTo(models.Avaliacao, { foreignKey: 'id' });
 
         // Comentario pertence a um Usuario (criador)
         Comentario.belongsTo(models.Usuarios, { foreignKey: 'id_criador_comentario' });
@@ -83,11 +74,12 @@ module.exports = (sequelize) => {
         }
     };
 
-    Comentario.listar_comentarios_por_festa = async (id_festa) => {
+    Comentario.listar_comentarios_por_festa = async (id_avaliacao) => {
         try {
+            console.log('id avaliacao',id_avaliacao)
             const comentarios = await Comentario.findAll({
                 where: {
-                    id_festa: id_festa  // Filtro para o id da festa
+                    id_avaliacao: id_avaliacao  // Filtro para o id da festa
                 }
             });
             return { status: 200, comentarios };  // Retorna os comentários da festa

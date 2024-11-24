@@ -284,6 +284,7 @@ initializeDatabase().then(({ Festa, Usuario, Avaliacao, Comentario, sequelize })
     router.put('/avaliacoes/:id', async (req, res) => {
         try {
             const avaliacao = req.body; // Dados atualizados
+            console.log('dados',avaliacao);
             avaliacao.id = req.params.id; // ID da avaliação a ser atualizada
             console.log('to entrando');
             const resultado = await Avaliacao.atualizar_avaliacao(avaliacao);
@@ -332,13 +333,26 @@ initializeDatabase().then(({ Festa, Usuario, Avaliacao, Comentario, sequelize })
 
     router.post('/comentarios', async (req, res) => {
         try {
-            const novoComentario = await Comentario.cadastrar_comentario(req.body);
-            return res.status(novoComentario.status).json(novoComentario);
+          const { id_avaliacao, id_criador_comentario, comentario } = req.body;
+          
+          // Verifica se todos os campos obrigatórios foram fornecidos
+          if (!id_avaliacao || !id_criador_comentario || !comentario) {
+            return res.status(400).json({ mensagem: 'Faltando dados obrigatórios' });
+          }
+      
+          // Cria o novo comentário
+          const novoComentario = await Comentario.create({
+            id_avaliacao,
+            id_criador_comentario,
+            comentario
+          });
+      
+          res.status(201).json({ mensagem: 'Comentário criado com sucesso', comentario: novoComentario });
         } catch (error) {
-            console.error('Erro ao cadastrar comentário:', error);
-            return res.status(500).json({ message: 'Erro ao cadastrar comentário' });
+          console.error('Erro ao criar comentário:', error);
+          res.status(500).json({ mensagem: 'Erro interno ao criar comentário' });
         }
-    });
+      });
 
     // Rota para listar todos os comentários
     router.get('/comentarios', async (req, res) => {
@@ -352,9 +366,10 @@ initializeDatabase().then(({ Festa, Usuario, Avaliacao, Comentario, sequelize })
     });
 
     // Rota para listar comentários de uma festa específica
-    router.get('/comentarios/festa/:id_festa', async (req, res) => {
+    router.get('/comentarios/:id_avaliacao', async (req, res) => {
+        console.log('paramentros',req.params.id_avaliacao);
         try {
-            const comentarios = await Comentario.listar_comentarios_por_festa(req.params.id_festa);
+            const comentarios = await Comentario.listar_comentarios_por_festa(req.params.id_avaliacao);
             return res.status(comentarios.status).json(comentarios);
         } catch (error) {
             console.error('Erro ao listar comentários por festa:', error);
@@ -376,13 +391,28 @@ initializeDatabase().then(({ Festa, Usuario, Avaliacao, Comentario, sequelize })
     // Rota para atualizar um comentário
     router.put('/comentarios/:id', async (req, res) => {
         try {
-            const comentarioAtualizado = await Comentario.atualizar_comentario({ ...req.body, id: req.params.id });
+            // Verifica se o corpo da requisição contém o campo 'comentario'
+            const { comentario } = req.body;
+            
+            // Se 'comentario' não for fornecido, retorna um erro
+            if (!comentario) {
+                return res.status(400).json({ message: 'Comentário não fornecido' });
+            }
+    
+            // Chama a função de atualização, passando apenas o 'comentario' e o id da URL
+            const comentarioAtualizado = await Comentario.atualizar_comentario({
+                comentario,
+                id: req.params.id
+            });
+    
+            // Retorna o status da atualização
             return res.status(comentarioAtualizado.status).json(comentarioAtualizado);
         } catch (error) {
             console.error('Erro ao atualizar comentário:', error);
             return res.status(500).json({ message: 'Erro ao atualizar comentário' });
         }
     });
+    
 
     // Rota para excluir um comentário
     router.delete('/comentarios/:id', async (req, res) => {

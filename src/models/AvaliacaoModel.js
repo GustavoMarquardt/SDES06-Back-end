@@ -81,12 +81,20 @@ module.exports = (sequelize) => {
         try {
             console.log('OI');
             const updateAvaliacao = await Avaliacao.update(avaliacao, { where: { id: avaliacao.id } });
+            console.log('Resultado da atualização:', updateAvaliacao);
+    
+            // Se não houver alterações, o banco pode não ter encontrado a avaliação
+            if (updateAvaliacao[0] === 0) {
+                return { status: 404, message: 'Avaliação não encontrada' };
+            }
+    
             return { status: 200, updateAvaliacao };
         } catch (error) {
+            console.error('Erro ao atualizar avaliação:', error);
             return { status: 500, message: error.message };
         }
     };
-
+    
     Avaliacao.excluir_avaliacao = async (id) => {
         try {
             await Avaliacao.destroy({ where: { id } });
